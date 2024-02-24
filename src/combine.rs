@@ -1,10 +1,10 @@
 pub mod parse {
     use std::fmt::{Error, format};
     use std::process::Command;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::tempdir;
     use std::fs::File;
     use std::io::prelude::*;
+    use crate::common::now;
 
     pub fn get_reg_files(reg_name: String, reg_start: i32, reg_end: i32) -> Result<Vec<String>, Error> {
         let mut files = vec![];
@@ -17,13 +17,6 @@ pub mod parse {
 
     pub fn get_reg_file_name(reg_name: String) -> String {
         return reg_name.replace("(.*)", "");
-    }
-
-    fn now() -> u64 {
-        let now = SystemTime::now();
-        return now.duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
     }
 
     fn get_temp_file() -> String {
