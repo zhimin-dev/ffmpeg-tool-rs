@@ -1,0 +1,4 @@
+/target
+*.MOV
+.idea
+.vscode

@@ -1,0 +1,11 @@
+[package]
+name = "ffmpeg-tool-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+tempfile = "3.9.0"
+actix-web = { version = "4.4.1", default-features = false, features = ["macros", "compress-gzip", "compress-brotli"] }
