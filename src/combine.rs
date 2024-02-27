@@ -1,5 +1,5 @@
 pub mod parse {
-    use std::fmt::{Error, format};
+    use std::fmt::{Error};
     use std::process::Command;
     use tempfile::tempdir;
     use std::fs::File;
@@ -61,5 +61,39 @@ pub mod parse {
             println!("{}", res.to_string());
             Ok(false)
         }
+    }
+
+    //ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
+    pub fn combine_ts(file:String, target:String) -> Result<bool, Error> {
+        let mut binding = Command::new("ffmpeg");
+        let res = binding.arg("-f")
+            .arg("concat")
+            .arg("-safe")
+            .arg("0")
+            .arg("-i")
+            .arg(file)
+            .arg("-c")
+            .arg("copy")
+            .arg(target).output().unwrap().status;
+        if res.success() {
+            Ok(true)
+        } else {
+            println!("{}", res.to_string());
+            Ok(false)
+        }
+    }
+
+    pub fn handle_combine_ts(reg_name: String, reg_start: i32, reg_end: i32, target_name: String) -> Result<bool, Error> {
+        let files = get_reg_files(reg_name.clone(), reg_start, reg_end).expect("解析失败");
+        let file_name = to_files().expect("生成文件失败");
+        let mut target = String::default();
+        if target_name.is_empty() {
+            target = format!("./{}", get_reg_file_name(reg_name.to_owned()));
+        } else {
+            target = format!("./{}", target_name.clone());
+        }
+        white_to_files(files.clone(), file_name.clone()).expect("写入文件失败");
+        let res = combine_ts(file_name.clone(), target).expect("合并文件失败");
+        Ok(res)
     }
 }

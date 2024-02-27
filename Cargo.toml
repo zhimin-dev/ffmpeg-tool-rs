@@ -8,4 +8,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.11", features = ["derive"] }
 tempfile = "3.9.0"
+url = "2.5.0"
 actix-web = { version = "4.4.1", default-features = false, features = ["macros", "compress-gzip", "compress-brotli"] }
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "^1", features = ["full"] }

@@ -1,11 +1,12 @@
 mod combine;
 mod download;
 mod common;
+mod m3u8;
 
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use crate::combine::parse::{to_files, get_reg_files, combine, get_reg_file_name, white_to_files};
-use crate::download::download::{download, get_file_name};
+use crate::download::download::{download, get_file_name, fast_download};
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -25,20 +26,6 @@ enum Commands {
 
 #[derive(clapArgs)]
 pub struct CombineArgs {
-    /* 完整的视频url，格式如下
-        -f https://zmis.me/video0.mp4 -f https://zmis.me/video1.mp4 -f https://zmis.me/video2.mp4
-     */
-    // #[arg(short = 'f', long = "files")]
-    // files: Vec<String>,
-
-    /* 如果很多，可以放在文件中，格式如下
-      https://zmis.me/video0.mp4
-      https://zmis.me/video1.mp4
-      https://zmis.me/video2.mp4
-     */
-    // #[arg(short = 'l', long = "local-files", default_value_t = String::from(""))]
-    // local: String,
-
     /// 正则模式， 输入文件 https://zmis.me/video(.*).mp4
     #[arg(short = 'r', long = "reg-name", default_value_t = String::from(""))]
     reg_name: String,
@@ -51,10 +38,6 @@ pub struct CombineArgs {
     #[arg(long = "reg-file-end")]
     reg_name_end: i32,
 
-    /// 输出的文件目录
-    #[arg(long = "target_folder", default_value_t = String::from(""))]
-    target_folder: String,
-
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
     target_file_name: String,
@@ -65,6 +48,10 @@ pub struct DownloadArgs {
     /// m3u8链接地址
     #[arg(short = 'u', long = "url")]
     url: String,
+
+    /// 设置为true则会优化加速下载
+    #[arg(long = "m3u8")]
+    m3u8: bool,
 
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
@@ -82,11 +69,7 @@ pub async fn main() {
             if args.target_file_name.is_empty() {
                 target = format!("./{}", get_reg_file_name(args.reg_name.to_owned()));
             } else {
-                if !args.target_folder.is_empty() {
-                    target = format!("{}/{}", args.target_folder, args.target_file_name);
-                } else {
-                    target = format!("./{}", args.target_file_name);
-                }
+                target = format!("./{}", args.target_file_name);
             }
             white_to_files(files.clone(), file_name.clone()).expect("写入文件失败");
             let res = combine(file_name.clone(), target).expect("合并文件失败");
@@ -103,7 +86,12 @@ pub async fn main() {
             }
             let file_name = get_file_name(args.target_file_name.to_owned());
             println!("download file name: {}", file_name.clone());
-            let res = download(args.url, file_name).expect("下载失败");
+            let mut res = false;
+            if args.m3u8 {
+                res = fast_download(args.url, file_name).await.expect("下载失败");
+            } else {
+                res = download(args.url, file_name).expect("下载失败");
+            }
             if res {
                 println!("下载成功")
             } else {
