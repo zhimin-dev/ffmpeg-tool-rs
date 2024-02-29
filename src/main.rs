@@ -5,8 +5,10 @@ mod m3u8;
 
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
+use std::path::Path;
 use crate::combine::parse::{to_files, get_reg_files, combine, get_reg_file_name, white_to_files};
-use crate::download::download::{download, get_file_name, fast_download};
+use crate::common::now;
+use crate::download::download::{download, get_file_name, fast_download, create_folder};
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -56,6 +58,14 @@ pub struct DownloadArgs {
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
     target_file_name: String,
+
+    /// 保存的文件夹
+    #[arg(long = "folder", default_value_t = String::from(""))]
+    folder: String,
+
+    /// 下载并发数
+    #[arg(long = "concurrent", default_value_t = 3)]
+    concurrent: i32,
 }
 
 #[actix_web::main]
@@ -88,7 +98,33 @@ pub async fn main() {
             println!("download file name: {}", file_name.clone());
             let mut res = false;
             if args.m3u8 {
-                res = fast_download(args.url, file_name).await.expect("下载失败");
+                let mut folder_name = args.folder.clone();
+                if folder_name.is_empty() {
+                    folder_name = format!("{}", now());
+                }
+                match create_folder(folder_name.clone()) {
+                    Ok(dir_status) => {
+                        if dir_status {
+                            if !args.folder.is_empty() {
+                                if let Err(e) = env::set_current_dir(&Path::new(&args.folder)) {
+                                    println!("进入文件夹失败");
+                                    return;
+                                } else {
+                                    res = fast_download(args.url, file_name, folder_name.clone(), args.concurrent).await.expect("下载失败");
+                                }
+                            } else {
+                                res = fast_download(args.url, file_name, folder_name.clone(), args.concurrent).await.expect("下载失败");
+                            }
+                        } else {
+                            println!("创建文件夹失败");
+                            return;
+                        }
+                    }
+                    _ => {
+                        println!("出错");
+                        return;
+                    }
+                }
             } else {
                 res = download(args.url, file_name).expect("下载失败");
             }
