@@ -22,3 +22,15 @@ ffmpeg-tool-rs combine -r IMG_\(\.\*\).MOV --reg-file-start=1767 --reg-file-end=
 ```
 ffmpeg-tool-rs download --url=https://zmis.me/xxx.m3u8
 ```
+
+### 截取视频
+
+-i 需要截取的视频
+
+-s 视频开始的秒数
+
+-d 截取视频的时长
+
+```
+ffmpeg-tool-rs cut -i=/your/local/file.mp4 -s=5 -d=10
+```

@@ -2,13 +2,16 @@ mod combine;
 mod download;
 mod common;
 mod m3u8;
+mod cut;
 
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use std::path::Path;
 use crate::combine::parse::{to_files, get_reg_files, combine, get_reg_file_name, white_to_files};
 use crate::common::now;
+use crate::cut::cut::cut;
 use crate::download::download::{download, get_file_name, fast_download, create_folder};
+use crate::m3u8::m3u8::{get_method_from_regex, get_uri_from_regex};
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -24,6 +27,27 @@ enum Commands {
     Combine(CombineArgs),
     /// 下载视频
     Download(DownloadArgs),
+    /// 截取视频
+    Cut(CutArgs),
+}
+
+#[derive(clapArgs)]
+pub struct CutArgs {
+    /// 需要截取的视频
+    #[arg(short = 'i', long = "input")]
+    input: String,
+
+    /// 视频开始的秒数
+    #[arg(short = 's', long = "start", default_value_t = 0)]
+    start: u32,
+
+    /// 截取视频的时长
+    #[arg(short = 'd', long = "duration", default_value_t = 3)]
+    duration: u32,
+
+    /// 输出的文件名
+    #[arg(long = "target_file_name", default_value_t = String::from(""))]
+    target_file_name: String,
 }
 
 #[derive(clapArgs)]
@@ -87,6 +111,24 @@ pub async fn main() {
                 println!("合并文件成功")
             } else {
                 println!("合并文件失败")
+            }
+        }
+        Commands::Cut(args) => {
+            if args.duration <= 0 {
+                println!("duration 需要 > 0");
+                return;
+            }
+            let mut target = String::default();
+            if args.target_file_name.is_empty() {
+                target = format!("./{}.mp4", now());
+            } else {
+                target = format!("./{}", args.target_file_name);
+            }
+            let res = cut(args.input.clone(), args.start, args.duration, target).expect("处理失败");
+            if res {
+                println!("截取视频成功")
+            } else {
+                println!("截取视频失败")
             }
         }
         Commands::Download(args) => {

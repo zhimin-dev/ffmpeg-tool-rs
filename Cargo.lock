@@ -545,6 +545,7 @@ version = "0.0.2"
 dependencies = [
  "actix-web",
  "clap",
+ "regex",
  "reqwest",
  "tempfile",
  "tokio",

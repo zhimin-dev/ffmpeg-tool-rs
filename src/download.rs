@@ -50,15 +50,15 @@ pub mod download {
     }
 
     pub async fn fast_download(url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
-        let mut list = vec![];
+        let mut hls_m3u;
         if is_url(url.clone()) {
-            list = parse_url(url.clone()).await;
+            hls_m3u = parse_url(url.clone()).await;
         } else {
-            list = parse_local(url.clone(), String::default());
+            hls_m3u = parse_local(url.clone(), String::default());
         }
         let mut ts_list = vec![];
         let mut ts_index = 0;
-        for x in &list {
+        for x in &hls_m3u.list {
             let mut ts = VideoTs::new();
             ts.set(ts_index, x.clone());
             ts_list.push(ts);
