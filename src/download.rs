@@ -32,23 +32,6 @@ pub mod download {
     use std::env;
     use std::path::Path;
 
-    pub fn download(url: String, file_name: String) -> Result<bool, Error> {
-        let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-i")
-            .arg(url.to_owned())
-            .arg("-c")
-            .arg("copy")
-            .arg("-bsf:a")
-            .arg("aac_adtstoasc")
-            .arg(file_name.to_owned()).output().unwrap().status;
-        if res.success() {
-            Ok(true)
-        } else {
-            println!("{}", res.to_string());
-            Ok(false)
-        }
-    }
-
     pub async fn fast_download(url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
         let mut hls_m3u;
         if is_url(url.clone()) {

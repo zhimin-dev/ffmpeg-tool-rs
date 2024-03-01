@@ -4,6 +4,7 @@ pub mod parse {
     use tempfile::tempdir;
     use std::fs::File;
     use std::io::prelude::*;
+    use crate::cmd::cmd::combine_ts;
     use crate::common::now;
 
     pub fn get_reg_files(reg_name: String, reg_start: i32, reg_end: i32) -> Result<Vec<String>, Error> {
@@ -43,44 +44,6 @@ pub mod parse {
             file.write_all(b"\n").expect("写入文件失败");
         }
         Ok(true)
-    }
-
-    //ffmpeg -f concat -i input.txt -c copy output.mp4
-    pub fn combine(file: String, target: String) -> Result<bool, Error> {
-        let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-f")
-            .arg("concat")
-            .arg("-i")
-            .arg(file)
-            .arg("-c")
-            .arg("copy")
-            .arg(target).output().unwrap().status;
-        if res.success() {
-            Ok(true)
-        } else {
-            println!("{}", res.to_string());
-            Ok(false)
-        }
-    }
-
-    //ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
-    pub fn combine_ts(file:String, target:String) -> Result<bool, Error> {
-        let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-f")
-            .arg("concat")
-            .arg("-safe")
-            .arg("0")
-            .arg("-i")
-            .arg(file)
-            .arg("-c")
-            .arg("copy")
-            .arg(target).output().unwrap().status;
-        if res.success() {
-            Ok(true)
-        } else {
-            println!("{}", res.to_string());
-            Ok(false)
-        }
     }
 
     pub fn handle_combine_ts(reg_name: String, reg_start: i32, reg_end: i32, target_name: String) -> Result<bool, Error> {

@@ -2,15 +2,15 @@ mod combine;
 mod download;
 mod common;
 mod m3u8;
-mod cut;
+mod cmd;
 
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use std::path::Path;
-use crate::combine::parse::{to_files, get_reg_files, combine, get_reg_file_name, white_to_files};
+use crate::cmd::cmd::{combine, cut, download};
+use crate::combine::parse::{to_files, get_reg_files, get_reg_file_name, white_to_files};
 use crate::common::now;
-use crate::cut::cut::cut;
-use crate::download::download::{download, get_file_name, fast_download, create_folder};
+use crate::download::download::{get_file_name, fast_download, create_folder};
 use crate::m3u8::m3u8::{get_method_from_regex, get_uri_from_regex};
 
 #[derive(Parser)]
