@@ -545,6 +545,7 @@ version = "0.0.2"
 dependencies = [
  "actix-web",
  "clap",
+ "openssl",
  "regex",
  "reqwest",
  "tempfile",

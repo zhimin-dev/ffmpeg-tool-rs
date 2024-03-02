@@ -31,13 +31,14 @@ pub mod download {
     use std::fs;
     use std::env;
     use std::path::Path;
+    use crate::m3u8::HlsM3u8Method;
 
     pub async fn fast_download(url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
         let mut hls_m3u;
         if is_url(url.clone()) {
-            hls_m3u = parse_url(url.clone()).await;
+            hls_m3u = parse_url(url.clone(), folder.clone()).await;
         } else {
-            hls_m3u = parse_local(url.clone(), String::default());
+            hls_m3u = parse_local(url.clone(), String::default(), folder.clone()).await;
         }
         let mut ts_list = vec![];
         let mut ts_index = 0;
@@ -87,7 +88,8 @@ pub mod download {
             }
         }
         println!("----download files finished");
-        return handle_combine_ts(String::from("(.*).ts"), 0, (total - 1) as i32, _file_name.clone());
+        return handle_combine_ts(String::from("(.*).ts"), 0,
+                                 (total - 1) as i32, _file_name.clone(), hls_m3u.method, folder.clone(), hls_m3u.iv, hls_m3u.sequence).await;
     }
 
     pub fn create_folder(folder: String) -> Result<bool, Error> {
@@ -111,7 +113,7 @@ pub mod download {
     pub fn get_file_name(file_name: String) -> String {
         let mut target = file_name;
         if target.is_empty() {
-            target = format!("./{}.mp4", now());
+            target = format!("{}.mp4", now());
         }
         target
     }

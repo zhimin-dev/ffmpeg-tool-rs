@@ -58,6 +58,7 @@ pub mod cmd {
 
     //ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
     pub fn combine_ts(file: String, target: String) -> Result<bool, Error> {
+        println!("{} file --- target {}", file.clone(), target.clone());
         let mut binding = Command::new("ffmpeg");
         let res = binding.arg("-f")
             .arg("concat")

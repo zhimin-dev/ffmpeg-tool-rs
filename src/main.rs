@@ -76,8 +76,8 @@ pub struct DownloadArgs {
     url: String,
 
     /// 设置为true则会优化加速下载
-    #[arg(long = "m3u8")]
-    m3u8: bool,
+    #[arg(long = "fast")]
+    fast: bool,
 
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
@@ -139,7 +139,8 @@ pub async fn main() {
             let file_name = get_file_name(args.target_file_name.to_owned());
             println!("download file name: {}", file_name.clone());
             let mut res = false;
-            if args.m3u8 {
+            if args.fast {
+                println!("now is fast mod");
                 let mut folder_name = args.folder.clone();
                 if folder_name.is_empty() {
                     folder_name = format!("{}", now());

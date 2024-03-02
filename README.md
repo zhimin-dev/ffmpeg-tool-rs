@@ -20,7 +20,7 @@ ffmpeg-tool-rs combine -r IMG_\(\.\*\).MOV --reg-file-start=1767 --reg-file-end=
 ### 下载视频
 
 ```
-ffmpeg-tool-rs download --url=https://zmis.me/xxx.m3u8
+ffmpeg-tool-rs download --url=https://zmis.me/xxx.m3u8 --fast --folder=1222
 ```
 
 ### 截取视频
