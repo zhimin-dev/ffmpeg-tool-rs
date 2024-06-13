@@ -20,8 +20,6 @@ impl VideoTs {
 
 pub mod download {
     use std::fmt::{Error};
-    use std::fs::File;
-    use std::process::Command;
     use std::sync::{Arc, mpsc, Mutex};
     use std::thread;
     use crate::combine::parse::{get_reg_files, handle_combine_ts};
@@ -29,9 +27,6 @@ pub mod download {
     use crate::download::{download_ts_file, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
     use std::fs;
-    use std::env;
-    use std::path::Path;
-    use crate::m3u8::HlsM3u8Method;
 
     pub async fn fast_download(url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
         let mut hls_m3u;

@@ -1,14 +1,12 @@
 pub mod parse {
     use std::fmt::{Error};
-    use std::process::Command;
     use tempfile::tempdir;
     use std::fs::File;
     use std::io::prelude::*;
-    use crate::cmd::cmd::combine_ts;
+    use crate::cmd::cmd::{combine, combine_ts};
     use crate::common::now;
     use crate::m3u8::HlsM3u8Method;
     use openssl::symm::{decrypt, Cipher};
-    use reqwest::Client;
 
     pub fn get_reg_files(reg_name: String, reg_start: i32, reg_end: i32) -> Result<Vec<String>, Error> {
         let mut files = vec![];
@@ -45,6 +43,21 @@ pub mod parse {
             let str = format!("file \'{}\'", num);
             file.write_all(str.as_bytes()).expect("写入文件失败");
             file.write_all(b"\n").expect("写入文件失败");
+        }
+        Ok(true)
+    }
+
+    pub fn combine_video(files: Vec<String>, file_name: String, target_file_name: String,
+                         same_param_index: i32, set_a_b: i32, set_v_b: i32, set_fps: i32) -> Result<bool, Error> {
+        white_to_files(files.clone(), file_name.clone()).expect("写入文件失败");
+        if same_param_index == -1 && set_a_b == 0 && set_v_b == 0 && set_fps == 0 {
+            return combine(file_name.clone(), target_file_name);
+        }
+        let mut audit_b = set_a_b;
+        let mut video_b = set_v_b;
+        let mut fps = set_fps;
+        if same_param_index != -1 {
+
         }
         Ok(true)
     }

@@ -8,14 +8,16 @@ use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use std::path::Path;
 use crate::cmd::cmd::{combine, cut, download};
-use crate::combine::parse::{to_files, get_reg_files, get_reg_file_name, white_to_files};
+use crate::combine::parse::{to_files, get_reg_files, get_reg_file_name, white_to_files, combine_video};
 use crate::common::now;
 use crate::download::download::{get_file_name, fast_download, create_folder};
 use crate::m3u8::m3u8::{get_method_from_regex, get_uri_from_regex};
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
-#[command(author = "zmisgod", version = env ! ("CARGO_PKG_VERSION"), about = "", long_about = None,)]
+#[command(
+    author = "zmisgod", version = env ! ("CARGO_PKG_VERSION"), about = "", long_about = None,
+)]
 pub struct Args {
     #[command(subcommand)]
     command: Commands,
@@ -67,6 +69,22 @@ pub struct CombineArgs {
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
     target_file_name: String,
+
+    /// 相同视频参数，如果指定，则根据指定视频的视频码率、音频码率、fps进行合并, 则后面set开头的参数均被覆盖
+    #[arg(long = "same_param_index", default_value_t = - 1)]
+    same_param_index: i32,
+
+    /// 指定fps
+    #[arg(long = "set_fps", default_value_t = 0)]
+    set_fps: i32,
+
+    /// 指定音频码率, audio bitrate
+    #[arg(long = "set_a_b", default_value_t = 0)]
+    set_a_b: i32,
+
+    /// 指定视频码率, video bitrate
+    #[arg(long = "set_v_b", default_value_t = 0)]
+    set_v_b: i32,
 }
 
 #[derive(clapArgs)]
@@ -105,8 +123,7 @@ pub async fn main() {
             } else {
                 target = format!("./{}", args.target_file_name);
             }
-            white_to_files(files.clone(), file_name.clone()).expect("写入文件失败");
-            let res = combine(file_name.clone(), target).expect("合并文件失败");
+            let res = combine_video(files, file_name.clone(), target, args.same_param_index, args.set_a_b, args.set_v_b, args.set_fps).expect("合并文件失败");
             if res {
                 println!("合并文件成功")
             } else {
