@@ -16,3 +16,8 @@ regex = "1.10.3"
 openssl = { version = "0.10.64", features = ["vendored"] }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
+file-hashing = "0.1.2"
+md-5 = "0.10.6"
+walkdir = "2.5.0"
+blake2 = "0.10.6"
+image = "0.25.2"

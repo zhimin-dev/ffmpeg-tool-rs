@@ -3,6 +3,7 @@ mod download;
 mod common;
 mod m3u8;
 mod cmd;
+mod repeat;
 
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
