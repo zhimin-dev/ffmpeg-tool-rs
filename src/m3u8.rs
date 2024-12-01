@@ -173,9 +173,9 @@ pub mod m3u8 {
         "".to_string()
     }
 
-    pub async fn parse_url(url: String, folder_name: String) -> HlsM3u8 {
+    pub async fn parse_url(url: String, folder_name: String, m3u8_file_name :String) -> HlsM3u8 {
         let hls_m3u8 = HlsM3u8::new();
-        let local_file = format!("./{}.m3u8", now());
+        let local_file = format!("./{}", m3u8_file_name);
         match download_file(url.clone(), local_file.clone()).await {
             Ok(data) => {
                 if data {

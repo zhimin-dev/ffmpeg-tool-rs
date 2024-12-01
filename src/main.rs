@@ -1,3 +1,5 @@
+extern crate core;
+
 mod combine;
 mod download;
 mod common;
@@ -8,7 +10,7 @@ mod repeat;
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use std::path::Path;
-use crate::cmd::cmd::{combine, cut, download};
+use crate::cmd::cmd::{clear_temp_files, combine, cut, download};
 use crate::combine::parse::{to_files, get_reg_files, get_reg_file_name, white_to_files, combine_video};
 use crate::common::now;
 use crate::download::download::{get_file_name, fast_download, create_folder};
@@ -113,6 +115,7 @@ pub struct DownloadArgs {
 
 #[actix_web::main]
 pub async fn main() {
+    let current_dir = env::current_dir().unwrap();
     let args = Args::parse();
     match args.command {
         Commands::Combine(args) => {
@@ -190,7 +193,14 @@ pub async fn main() {
                 res = download(args.url, file_name).expect("下载失败");
             }
             if res {
-                println!("下载成功")
+                env::set_current_dir(current_dir).unwrap();
+                println!("生成mp4文件成功");
+                let data = clear_temp_files(args.folder.clone());
+                if data {
+                    println!("清理临时文件成功");
+                } else {
+                    println!("清理临时文件失败");
+                }
             } else {
                 println!("下载失败")
             }

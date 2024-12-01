@@ -1,6 +1,10 @@
+use core::fmt;
+use std::collections::HashMap;
 use crate::common::{download_file, now};
 use tokio::runtime::Runtime;
 use std::fs;
+use std::io::{Error, Read};
+use serde::{Deserialize, Serialize};
 
 struct VideoTs {
     index: i32,
@@ -18,20 +22,81 @@ impl VideoTs {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct BaseInfo {
+    pub url: String,
+    pub m3u8_name: String,
+}
+
+impl BaseInfo {
+    pub fn new() -> BaseInfo {
+        BaseInfo { url: "".to_string(), m3u8_name: "".to_string() }
+    }
+    pub fn set_host(&mut self, url: String) {
+        self.url = url
+    }
+
+    pub fn set_m3u8_name(&mut self, m3u8_name: String) {
+        self.m3u8_name = m3u8_name
+    }
+
+    pub fn generate(self, folder: String) -> Result<(), Error> {
+        let data = serde_json::to_vec(&self)?;
+        Ok(std::fs::write(folder, &data)?)
+    }
+}
+
+// pub fn read_base_info(file_name: String) -> Result<BaseInfo, dyn std::error::Error> {
+//     let mut file = std::fs::File::open(file_name.clone())?;
+//     let mut contents = String::new();
+//     file.read_to_string(&mut contents)?;
+//
+//     // 使用 serde_json 來解析 JSON
+//     return serde_json::from_str(&contents)?;
+// }
+
+fn read_base_info(file_name: &str) -> Result<BaseInfo, std::io::Error> {
+    let path = std::path::Path::new(file_name);
+    let mut file = std::fs::File::open(path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let base_info: BaseInfo = serde_json::from_str(&contents)?;
+    Ok(base_info)
+}
+
 pub mod download {
-    use std::fmt::{Error};
+    use std::fmt::{format, Error};
     use std::sync::{Arc, mpsc, Mutex};
     use std::thread;
     use crate::combine::parse::{get_reg_files, handle_combine_ts};
     use crate::common::{is_url, now};
-    use crate::download::{download_ts_file, VideoTs};
+    use crate::download::{download_ts_file, read_base_info, BaseInfo, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
     use std::fs;
+    use std::fs::exists;
+    use image::open;
 
-    pub async fn fast_download(url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
+    pub async fn fast_download(pass_url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
         let mut hls_m3u;
+        let mut url = pass_url;
+        let base_info = "base_info.json";
+        let mut m3u8_file_name = format!("{}.m3u8", now());
+        let mut base_info_obj = BaseInfo::new();
+        let read_base_info = read_base_info(&base_info.to_string());
+        match read_base_info {
+            Ok(base_info_data) => {
+                m3u8_file_name = base_info_data.m3u8_name;
+                url = base_info_data.url;
+            }
+            Err(e) => {
+                base_info_obj.set_host(url.clone());
+                base_info_obj.set_m3u8_name(m3u8_file_name.clone());
+                let _ = base_info_obj.generate(base_info.to_string());
+            }
+        }
         if is_url(url.clone()) {
-            hls_m3u = parse_url(url.clone(), folder.clone()).await;
+            hls_m3u = parse_url(url.clone(), folder.clone(), m3u8_file_name.clone()).await;
         } else {
             hls_m3u = parse_local(url.clone(), String::default(), folder.clone()).await;
         }
@@ -115,6 +180,7 @@ pub mod download {
 }
 
 fn download_ts_file(video_ts: VideoTs) -> bool {
+    println!("---pass {}", video_ts.url.clone());
     let download_file_name = format!("./{}.ts", video_ts.index);
     match fs::metadata(download_file_name.clone()) {
         Ok(_) => {

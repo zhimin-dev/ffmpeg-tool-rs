@@ -5,7 +5,7 @@ use regex::Regex;
 pub struct VideoInfo {
     width: i32,
     height: i32,
-    duration: i32,//毫秒
+    duration: i32, //毫秒
     video_rate: i32,
     audio_rate: i32,
     fps: f32,
@@ -25,7 +25,7 @@ pub struct FfprobeStream {
     channels: Option<i32>,
     avg_frame_rate: String,
     bit_rate: String,
-    duration_ts: Option<i32>
+    duration_ts: Option<i32>,
 }
 
 impl From<Ffprobe> for VideoInfo {
@@ -50,11 +50,11 @@ impl From<Ffprobe> for VideoInfo {
                         // 获取第一个匹配的日期
                         let year = cap[1].to_string();
                         let month = cap[2].to_string();
-                        video.fps = format!("{:.2}", (year.parse::<f32>().unwrap())  / (month.parse::<f32>().unwrap())).parse::<f32>().unwrap()
-                    },
-                    None=> {}
+                        video.fps = format!("{:.2}", (year.parse::<f32>().unwrap()) / (month.parse::<f32>().unwrap())).parse::<f32>().unwrap()
+                    }
+                    None => {}
                 }
-                video.duration = i.duration_ts.unwrap()/1000;
+                video.duration = i.duration_ts.unwrap() / 1000;
                 video.video_rate = i.bit_rate.parse::<i32>().unwrap();
             } else if i.codec_type == "audio" {
                 video.audio_rate = i.bit_rate.parse::<i32>().unwrap();
@@ -65,9 +65,12 @@ impl From<Ffprobe> for VideoInfo {
 }
 
 pub mod cmd {
+    use std::env;
     use std::fmt::Error;
     use std::process::Command;
     use crate::cmd::{Ffprobe, VideoInfo};
+    use std::fs::{self, DirEntry};
+    use std::path::Path;
 
     pub fn cut(file: String, start: u32, duration: u32, target: String) -> Result<bool, Error> {
         let mut binding = Command::new("ffmpeg");
@@ -86,6 +89,35 @@ pub mod cmd {
             println!("{}", res.to_string());
             Ok(false)
         }
+    }
+
+    pub fn clear_temp_files(folder_name: String) -> bool {
+        let current_dir = env::current_dir().unwrap();
+        println!("current dir {}",current_dir.as_os_str().to_str().unwrap());
+        println!("folderName:{}",folder_name.clone());
+        let clear_ext = vec!["ts", "m3u8", "txt"];
+        let path_str = format!("./{}", folder_name.to_owned());
+        println!("{}", path_str);
+        let dir_path = Path::new(path_str.as_str());
+        println!("{:?}", dir_path.exists());
+
+        if !dir_path.is_dir() {
+            println!("-----path is not dir");
+            return false;
+        }
+        for i in clear_ext {
+            for entry in fs::read_dir(dir_path).unwrap() {
+                let entry = entry.unwrap();
+                println!("file ---{}", entry.file_name().to_owned().into_string().unwrap());
+                let path = entry.path();
+
+                if path.is_file() && path.extension().unwrap().as_encoded_bytes() == i.as_bytes() {
+                    println!("del ");
+                    fs::remove_file(path).unwrap();
+                }
+            }
+        }
+        true
     }
 
     pub fn download(url: String, file_name: String) -> Result<bool, Error> {
