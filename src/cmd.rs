@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct VideoInfo {
@@ -50,7 +50,12 @@ impl From<Ffprobe> for VideoInfo {
                         // 获取第一个匹配的日期
                         let year = cap[1].to_string();
                         let month = cap[2].to_string();
-                        video.fps = format!("{:.2}", (year.parse::<f32>().unwrap()) / (month.parse::<f32>().unwrap())).parse::<f32>().unwrap()
+                        video.fps = format!(
+                            "{:.2}",
+                            (year.parse::<f32>().unwrap()) / (month.parse::<f32>().unwrap())
+                        )
+                        .parse::<f32>()
+                        .unwrap()
                     }
                     None => {}
                 }
@@ -65,16 +70,17 @@ impl From<Ffprobe> for VideoInfo {
 }
 
 pub mod cmd {
+    use crate::cmd::{Ffprobe, VideoInfo};
     use std::env;
     use std::fmt::Error;
-    use std::process::Command;
-    use crate::cmd::{Ffprobe, VideoInfo};
-    use std::fs::{self, DirEntry};
+    use std::fs::{self};
     use std::path::Path;
+    use std::process::Command;
 
     pub fn cut(file: String, start: u32, duration: u32, target: String) -> Result<bool, Error> {
         let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-i")
+        let res = binding
+            .arg("-i")
             .arg(file)
             .arg("-ss")
             .arg(start.to_string())
@@ -82,7 +88,10 @@ pub mod cmd {
             .arg(duration.to_string())
             .arg("-c")
             .arg("copy")
-            .arg(target).output().unwrap().status;
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
         if res.success() {
             Ok(true)
         } else {
@@ -93,8 +102,8 @@ pub mod cmd {
 
     pub fn clear_temp_files(folder_name: String) -> bool {
         let current_dir = env::current_dir().unwrap();
-        println!("current dir {}",current_dir.as_os_str().to_str().unwrap());
-        println!("folderName:{}",folder_name.clone());
+        println!("current dir {}", current_dir.as_os_str().to_str().unwrap());
+        println!("folderName:{}", folder_name.clone());
         let clear_ext = vec!["ts", "m3u8", "txt"];
         let path_str = format!("./{}", folder_name.to_owned());
         println!("{}", path_str);
@@ -108,7 +117,10 @@ pub mod cmd {
         for i in clear_ext {
             for entry in fs::read_dir(dir_path).unwrap() {
                 let entry = entry.unwrap();
-                println!("file ---{}", entry.file_name().to_owned().into_string().unwrap());
+                println!(
+                    "file ---{}",
+                    entry.file_name().to_owned().into_string().unwrap()
+                );
                 let path = entry.path();
 
                 if path.is_file() && path.extension().unwrap().as_encoded_bytes() == i.as_bytes() {
@@ -122,13 +134,17 @@ pub mod cmd {
 
     pub fn download(url: String, file_name: String) -> Result<bool, Error> {
         let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-i")
+        let res = binding
+            .arg("-i")
             .arg(url.to_owned())
             .arg("-c")
             .arg("copy")
             .arg("-bsf:a")
             .arg("aac_adtstoasc")
-            .arg(file_name.to_owned()).output().unwrap().status;
+            .arg(file_name.to_owned())
+            .output()
+            .unwrap()
+            .status;
         if res.success() {
             Ok(true)
         } else {
@@ -140,13 +156,17 @@ pub mod cmd {
     //ffmpeg -f concat -i input.txt -c copy output.mp4
     pub fn combine(file: String, target: String) -> Result<bool, Error> {
         let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-f")
+        let res = binding
+            .arg("-f")
             .arg("concat")
             .arg("-i")
             .arg(file)
             .arg("-c")
             .arg("copy")
-            .arg(target).output().unwrap().status;
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
         if res.success() {
             Ok(true)
         } else {
@@ -159,7 +179,8 @@ pub mod cmd {
     pub fn combine_ts(file: String, target: String) -> Result<bool, Error> {
         println!("{} file --- target {}", file.clone(), target.clone());
         let mut binding = Command::new("ffmpeg");
-        let res = binding.arg("-f")
+        let res = binding
+            .arg("-f")
             .arg("concat")
             .arg("-safe")
             .arg("0")
@@ -167,7 +188,10 @@ pub mod cmd {
             .arg(file)
             .arg("-c")
             .arg("copy")
-            .arg(target).output().unwrap().status;
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
         if res.success() {
             Ok(true)
         } else {
@@ -178,7 +202,7 @@ pub mod cmd {
 
     pub fn get_video_info(file: &str) -> Option<VideoInfo> {
         let mut ffprobe = Command::new("ffprobe");
-        let mut prob_result = ffprobe
+        let prob_result = ffprobe
             .arg("-v")
             .arg("quiet")
             .arg("-print_format")
@@ -199,7 +223,6 @@ pub mod cmd {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

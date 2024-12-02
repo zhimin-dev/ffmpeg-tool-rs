@@ -8,7 +8,7 @@ pub struct HlsM3u8 {
     original_url: String,
     folder: String,
     // 文件夹
-    pub sequence: i32,//序号
+    pub sequence: i32, //序号
 }
 
 // SAMPLE-AES || AES-128
@@ -47,14 +47,23 @@ impl HlsM3u8 {
         self.sequence = sequence
     }
 
-    pub async fn set_method_and_key(&mut self, method: Option<HlsM3u8Method>, key: String, iv: String) {
+    pub async fn set_method_and_key(
+        &mut self,
+        method: Option<HlsM3u8Method>,
+        key: String,
+        iv: String,
+    ) {
         self.method = method;
         self.key = key.clone();
         self.iv = iv.clone();
         println!("before key is: {}", self.key);
         if !is_url(key.clone()) && !self.original_url.is_empty() {
             if key.starts_with("/") {
-                self.set_key(format!("{}/{}", get_url_host(&self.original_url).expect("获取host失败"), key))
+                self.set_key(format!(
+                    "{}/{}",
+                    get_url_host(&self.original_url).expect("获取host失败"),
+                    key
+                ))
             } else {
                 self.set_key(replace_last_segment(&self.original_url, &self.key))
             }
@@ -81,12 +90,12 @@ impl HlsM3u8 {
 }
 
 pub mod m3u8 {
-    use std::fs::File;
-    use std::io::Read;
-    use crate::common::{download_file, is_url, now, replace_last_segment};
+    use crate::common::{download_file, is_url, replace_last_segment};
+    use crate::m3u8::HlsM3u8Method::{Aes128, SampleAes};
     use crate::m3u8::{HlsM3u8, HlsM3u8Method};
     use regex::Regex;
-    use crate::m3u8::HlsM3u8Method::{Aes128, SampleAes};
+    use std::fs::File;
+    use std::io::Read;
 
     pub async fn parse_local(local_file: String, target_url: String, folder: String) -> HlsM3u8 {
         let mut data = File::open(local_file).expect("file not exists");
@@ -121,9 +130,7 @@ pub mod m3u8 {
                         let str = i.replace("#EXT-X-MEDIA-SEQUENCE:", "");
                         let mut seq = 0;
                         match str.parse::<i32>() {
-                            Ok(data) => {
-                                seq = data
-                            }
+                            Ok(data) => seq = data,
                             _ => {}
                         }
                         hls_m3u8.set_sequence(seq);
@@ -173,20 +180,23 @@ pub mod m3u8 {
         "".to_string()
     }
 
-    pub async fn parse_url(url: String, folder_name: String, m3u8_file_name :String) -> HlsM3u8 {
+    pub async fn parse_url(url: String, folder_name: String, m3u8_file_name: String) -> HlsM3u8 {
         let hls_m3u8 = HlsM3u8::new();
         let local_file = format!("./{}", m3u8_file_name);
         match download_file(url.clone(), local_file.clone()).await {
             Ok(data) => {
                 if data {
-                    parse_local(local_file.clone().to_string(), url.clone(), folder_name.clone()).await
+                    parse_local(
+                        local_file.clone().to_string(),
+                        url.clone(),
+                        folder_name.clone(),
+                    )
+                    .await
                 } else {
                     hls_m3u8
                 }
             }
-            _ => {
-                hls_m3u8
-            }
+            _ => hls_m3u8,
         }
     }
 }

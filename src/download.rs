@@ -1,10 +1,8 @@
-use core::fmt;
-use std::collections::HashMap;
-use crate::common::{download_file, now};
-use tokio::runtime::Runtime;
+use crate::common::download_file;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Error, Read};
-use serde::{Deserialize, Serialize};
+use tokio::runtime::Runtime;
 
 struct VideoTs {
     index: i32,
@@ -13,7 +11,10 @@ struct VideoTs {
 
 impl VideoTs {
     pub fn new() -> VideoTs {
-        VideoTs { index: 0, url: "".to_string() }
+        VideoTs {
+            index: 0,
+            url: "".to_string(),
+        }
     }
 
     pub fn set(&mut self, index: i32, url: String) {
@@ -30,7 +31,10 @@ pub struct BaseInfo {
 
 impl BaseInfo {
     pub fn new() -> BaseInfo {
-        BaseInfo { url: "".to_string(), m3u8_name: "".to_string() }
+        BaseInfo {
+            url: "".to_string(),
+            m3u8_name: "".to_string(),
+        }
     }
     pub fn set_host(&mut self, url: String) {
         self.url = url
@@ -66,19 +70,22 @@ fn read_base_info(file_name: &str) -> Result<BaseInfo, std::io::Error> {
 }
 
 pub mod download {
-    use std::fmt::{format, Error};
-    use std::sync::{Arc, mpsc, Mutex};
-    use std::thread;
-    use crate::combine::parse::{get_reg_files, handle_combine_ts};
+    use crate::combine::parse::handle_combine_ts;
     use crate::common::{is_url, now};
     use crate::download::{download_ts_file, read_base_info, BaseInfo, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
+    use std::fmt::Error;
     use std::fs;
-    use std::fs::exists;
-    use image::open;
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::thread;
 
-    pub async fn fast_download(pass_url: String, _file_name: String, folder: String, concurrent: i32) -> Result<bool, Error> {
-        let mut hls_m3u;
+    pub async fn fast_download(
+        pass_url: String,
+        _file_name: String,
+        folder: String,
+        concurrent: i32,
+    ) -> Result<bool, Error> {
+        let hls_m3u;
         let mut url = pass_url;
         let base_info = "base_info.json";
         let mut m3u8_file_name = format!("{}.m3u8", now());
@@ -89,7 +96,7 @@ pub mod download {
                 m3u8_file_name = base_info_data.m3u8_name;
                 url = base_info_data.url;
             }
-            Err(e) => {
+            Err(_) => {
                 base_info_obj.set_host(url.clone());
                 base_info_obj.set_m3u8_name(m3u8_file_name.clone());
                 let _ = base_info_obj.generate(base_info.to_string());
@@ -141,15 +148,24 @@ pub mod download {
             }
             let result = rx.recv();
             match result {
-                Ok(data) => {
+                Ok(_) => {
                     i += 1;
                 }
                 Err(_e) => {}
             }
         }
         println!("----download files finished");
-        return handle_combine_ts(String::from("(.*).ts"), 0,
-                                 (total - 1) as i32, _file_name.clone(), hls_m3u.method, folder.clone(), hls_m3u.iv, hls_m3u.sequence).await;
+        return handle_combine_ts(
+            String::from("(.*).ts"),
+            0,
+            (total - 1) as i32,
+            _file_name.clone(),
+            hls_m3u.method,
+            folder.clone(),
+            hls_m3u.iv,
+            hls_m3u.sequence,
+        )
+        .await;
     }
 
     pub fn create_folder(folder: String) -> Result<bool, Error> {
@@ -157,9 +173,7 @@ pub mod download {
         if !fs::metadata(folder.clone()).is_ok() {
             // 文件夹不存在，创建文件夹
             match fs::create_dir(folder.clone()) {
-                Ok(_) => {
-                    Ok(true)
-                }
+                Ok(_) => Ok(true),
                 Err(e) => {
                     println!("创建文件夹时出错：{}", e);
                     Ok(false)
@@ -193,12 +207,8 @@ fn download_ts_file(video_ts: VideoTs) -> bool {
                 println!("download ts file {}", video_ts.url.clone());
                 let res = download_file(video_ts.url.clone(), download_file_name).await;
                 return match res {
-                    Ok(data) => {
-                        data
-                    }
-                    _ => {
-                        false
-                    }
+                    Ok(data) => data,
+                    _ => false,
                 };
             })
         }

@@ -1,11 +1,12 @@
 use std::fmt::Error;
+use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::Url;
-use std::fs;
 
 pub fn now() -> u64 {
     let now = SystemTime::now();
-    return now.duration_since(UNIX_EPOCH)
+    return now
+        .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs();
 }
@@ -18,7 +19,6 @@ pub fn is_url(_str: String) -> bool {
         Err(_) => false,
     };
 }
-
 
 pub fn get_url_host(str: &str) -> Result<String, Error> {
     if str.is_empty() {

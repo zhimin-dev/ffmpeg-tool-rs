@@ -1,20 +1,18 @@
 extern crate core;
 
-mod combine;
-mod download;
-mod common;
-mod m3u8;
 mod cmd;
+mod combine;
+mod common;
+mod download;
+mod m3u8;
 mod repeat;
-
-use clap::{arg, Args as clapArgs, Parser, Subcommand};
-use std::{env};
-use std::path::Path;
-use crate::cmd::cmd::{clear_temp_files, combine, cut, download};
-use crate::combine::parse::{to_files, get_reg_files, get_reg_file_name, white_to_files, combine_video};
+use crate::cmd::cmd::{clear_temp_files, cut, download};
+use crate::combine::parse::{combine_video, get_reg_file_name, get_reg_files, to_files};
 use crate::common::now;
-use crate::download::download::{get_file_name, fast_download, create_folder};
-use crate::m3u8::m3u8::{get_method_from_regex, get_uri_from_regex};
+use crate::download::download::{create_folder, fast_download, get_file_name};
+use clap::{arg, Args as clapArgs, Parser, Subcommand};
+use std::env;
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -119,15 +117,29 @@ pub async fn main() {
     let args = Args::parse();
     match args.command {
         Commands::Combine(args) => {
-            let files = get_reg_files(args.reg_name.clone(), args.reg_name_start, args.reg_name_end).expect("解析失败");
+            let files = get_reg_files(
+                args.reg_name.clone(),
+                args.reg_name_start,
+                args.reg_name_end,
+            )
+            .expect("解析失败");
             let file_name = to_files().expect("生成文件失败");
-            let mut target = String::default();
+            let target;
             if args.target_file_name.is_empty() {
                 target = format!("./{}", get_reg_file_name(args.reg_name.to_owned()));
             } else {
                 target = format!("./{}", args.target_file_name);
             }
-            let res = combine_video(files, file_name.clone(), target, args.same_param_index, args.set_a_b, args.set_v_b, args.set_fps).expect("合并文件失败");
+            let res = combine_video(
+                files,
+                file_name.clone(),
+                target,
+                args.same_param_index,
+                args.set_a_b,
+                args.set_v_b,
+                args.set_fps,
+            )
+            .expect("合并文件失败");
             if res {
                 println!("合并文件成功")
             } else {
@@ -139,7 +151,7 @@ pub async fn main() {
                 println!("duration 需要 > 0");
                 return;
             }
-            let mut target = String::default();
+            let target;
             if args.target_file_name.is_empty() {
                 target = format!("./{}.mp4", now());
             } else {
@@ -159,7 +171,7 @@ pub async fn main() {
             }
             let file_name = get_file_name(args.target_file_name.to_owned());
             println!("download file name: {}", file_name.clone());
-            let mut res = false;
+            let res;
             if args.fast {
                 println!("now is fast mod");
                 let mut folder_name = args.folder.clone();
@@ -170,14 +182,28 @@ pub async fn main() {
                     Ok(dir_status) => {
                         if dir_status {
                             if !args.folder.is_empty() {
-                                if let Err(e) = env::set_current_dir(&Path::new(&args.folder)) {
+                                if let Err(_) = env::set_current_dir(&Path::new(&args.folder)) {
                                     println!("进入文件夹失败");
                                     return;
                                 } else {
-                                    res = fast_download(args.url, file_name, folder_name.clone(), args.concurrent).await.expect("下载失败");
+                                    res = fast_download(
+                                        args.url,
+                                        file_name,
+                                        folder_name.clone(),
+                                        args.concurrent,
+                                    )
+                                    .await
+                                    .expect("下载失败");
                                 }
                             } else {
-                                res = fast_download(args.url, file_name, folder_name.clone(), args.concurrent).await.expect("下载失败");
+                                res = fast_download(
+                                    args.url,
+                                    file_name,
+                                    folder_name.clone(),
+                                    args.concurrent,
+                                )
+                                .await
+                                .expect("下载失败");
                             }
                         } else {
                             println!("创建文件夹失败");
