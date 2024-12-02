@@ -6,7 +6,7 @@ mod common;
 mod download;
 mod m3u8;
 mod repeat;
-use crate::cmd::cmd::{clear_temp_files, cut, download};
+use crate::cmd::cmd::{check_base_info_exists, clear_temp_files, cut, download};
 use crate::combine::parse::{combine_video, get_reg_file_name, get_reg_files, to_files};
 use crate::common::now;
 use crate::download::download::{create_folder, fast_download, get_file_name};
@@ -91,7 +91,7 @@ pub struct CombineArgs {
 #[derive(clapArgs)]
 pub struct DownloadArgs {
     /// m3u8链接地址
-    #[arg(short = 'u', long = "url")]
+    #[arg(long = "url", default_value_t = String::from(""))]
     url: String,
 
     /// 设置为true则会优化加速下载
@@ -109,6 +109,10 @@ pub struct DownloadArgs {
     /// 下载并发数
     #[arg(long = "concurrent", default_value_t = 3)]
     concurrent: i32,
+
+    /// 下载并发数
+    #[arg(long = "download_dir", default_value_t = String::from("download"))]
+    download_dir: String,
 }
 
 #[actix_web::main]
@@ -122,7 +126,7 @@ pub async fn main() {
                 args.reg_name_start,
                 args.reg_name_end,
             )
-            .expect("解析失败");
+                .expect("解析失败");
             let file_name = to_files().expect("生成文件失败");
             let target;
             if args.target_file_name.is_empty() {
@@ -139,7 +143,7 @@ pub async fn main() {
                 args.set_v_b,
                 args.set_fps,
             )
-            .expect("合并文件失败");
+                .expect("合并文件失败");
             if res {
                 println!("合并文件成功")
             } else {
@@ -165,8 +169,14 @@ pub async fn main() {
             }
         }
         Commands::Download(args) => {
-            if args.url.is_empty() {
-                println!("url is required!");
+            let mut folder_name = args.folder.clone();
+            if folder_name.is_empty() {
+                folder_name = format!("{}", now());
+            }
+            folder_name = format!("./{}/{}", args.download_dir, folder_name);
+            // url 或者文件夹存在base_info.json 存在即可，否则报错
+            if args.url.is_empty() && !check_base_info_exists(folder_name.clone()) {
+                println!("url or folder is required!");
                 return;
             }
             let file_name = get_file_name(args.target_file_name.to_owned());
@@ -174,15 +184,11 @@ pub async fn main() {
             let res;
             if args.fast {
                 println!("now is fast mod");
-                let mut folder_name = args.folder.clone();
-                if folder_name.is_empty() {
-                    folder_name = format!("{}", now());
-                }
                 match create_folder(folder_name.clone()) {
                     Ok(dir_status) => {
                         if dir_status {
-                            if !args.folder.is_empty() {
-                                if let Err(_) = env::set_current_dir(&Path::new(&args.folder)) {
+                            if !folder_name.is_empty() {
+                                if let Err(_) = env::set_current_dir(&Path::new(&folder_name)) {
                                     println!("进入文件夹失败");
                                     return;
                                 } else {
@@ -192,8 +198,8 @@ pub async fn main() {
                                         folder_name.clone(),
                                         args.concurrent,
                                     )
-                                    .await
-                                    .expect("下载失败");
+                                        .await
+                                        .expect("下载失败");
                                 }
                             } else {
                                 res = fast_download(
@@ -202,8 +208,8 @@ pub async fn main() {
                                     folder_name.clone(),
                                     args.concurrent,
                                 )
-                                .await
-                                .expect("下载失败");
+                                    .await
+                                    .expect("下载失败");
                             }
                         } else {
                             println!("创建文件夹失败");
@@ -221,7 +227,7 @@ pub async fn main() {
             if res {
                 env::set_current_dir(current_dir).unwrap();
                 println!("生成mp4文件成功");
-                let data = clear_temp_files(args.folder.clone());
+                let data = clear_temp_files(folder_name.clone());
                 if data {
                     println!("清理临时文件成功");
                 } else {

@@ -54,8 +54,8 @@ impl From<Ffprobe> for VideoInfo {
                             "{:.2}",
                             (year.parse::<f32>().unwrap()) / (month.parse::<f32>().unwrap())
                         )
-                        .parse::<f32>()
-                        .unwrap()
+                            .parse::<f32>()
+                            .unwrap()
                     }
                     None => {}
                 }
@@ -100,31 +100,27 @@ pub mod cmd {
         }
     }
 
+    pub fn check_base_info_exists(folder_name: String) -> bool {
+        true
+    }
+
     pub fn clear_temp_files(folder_name: String) -> bool {
         let current_dir = env::current_dir().unwrap();
-        println!("current dir {}", current_dir.as_os_str().to_str().unwrap());
-        println!("folderName:{}", folder_name.clone());
         let clear_ext = vec!["ts", "m3u8", "txt"];
         let path_str = format!("./{}", folder_name.to_owned());
-        println!("{}", path_str);
         let dir_path = Path::new(path_str.as_str());
-        println!("{:?}", dir_path.exists());
+        println!("now path {}, pass dir {}", current_dir.as_os_str().to_str().unwrap(), dir_path.clone());
 
         if !dir_path.is_dir() {
-            println!("-----path is not dir");
+            println!("-----path: {} is not dir", dir_path.clone());
             return false;
         }
         for i in clear_ext {
             for entry in fs::read_dir(dir_path).unwrap() {
                 let entry = entry.unwrap();
-                println!(
-                    "file ---{}",
-                    entry.file_name().to_owned().into_string().unwrap()
-                );
                 let path = entry.path();
 
                 if path.is_file() && path.extension().unwrap().as_encoded_bytes() == i.as_bytes() {
-                    println!("del ");
                     fs::remove_file(path).unwrap();
                 }
             }
