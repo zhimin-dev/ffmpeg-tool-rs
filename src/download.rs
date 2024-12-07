@@ -50,15 +50,6 @@ impl BaseInfo {
     }
 }
 
-// pub fn read_base_info(file_name: String) -> Result<BaseInfo, dyn std::error::Error> {
-//     let mut file = std::fs::File::open(file_name.clone())?;
-//     let mut contents = String::new();
-//     file.read_to_string(&mut contents)?;
-//
-//     // 使用 serde_json 來解析 JSON
-//     return serde_json::from_str(&contents)?;
-// }
-
 fn read_base_info(file_name: &str) -> Result<BaseInfo, std::io::Error> {
     let path = std::path::Path::new(file_name);
     let mut file = std::fs::File::open(path)?;

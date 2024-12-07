@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct VideoInfo {
-    width: i32,
-    height: i32,
-    duration: i32, //毫秒
-    video_rate: i32,
-    audio_rate: i32,
-    fps: f32,
+    pub width: i32,
+    pub height: i32,
+    pub duration: i32, //毫秒
+    pub video_rate: i32,
+    pub audio_rate: i32,
+    pub fps: f32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -72,7 +72,7 @@ impl From<Ffprobe> for VideoInfo {
 pub mod cmd {
     use crate::cmd::{Ffprobe, VideoInfo};
     use std::env;
-    use std::fmt::Error;
+    use std::fmt::{format, Error};
     use std::fs::{self};
     use std::path::Path;
     use std::process::Command;
@@ -109,10 +109,10 @@ pub mod cmd {
         let clear_ext = vec!["ts", "m3u8", "txt"];
         let path_str = format!("./{}", folder_name.to_owned());
         let dir_path = Path::new(path_str.as_str());
-        println!("now path {}, pass dir {}", current_dir.as_os_str().to_str().unwrap(), dir_path.clone());
+        println!("now path {}, pass dir {:?}", current_dir.as_os_str().to_str().unwrap(), dir_path);
 
         if !dir_path.is_dir() {
-            println!("-----path: {} is not dir", dir_path.clone());
+            println!("-----path: {:?} is not dir", dir_path);
             return false;
         }
         for i in clear_ext {
@@ -159,6 +159,37 @@ pub mod cmd {
             .arg(file)
             .arg("-c")
             .arg("copy")
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
+        if res.success() {
+            Ok(true)
+        } else {
+            println!("ffmpeg error---{}", res.to_string());
+            Ok(false)
+        }
+    }
+
+    // ffmpeg -i input.mp4 -b:v <视频码率> -b:a <音频码率> -r <帧率> output.mp4
+    // ffmpeg -i input.mp4 -vf "scale=1280:720" -b:v 1500k -b:a 192k -r 30 -c:v libx264 -c:a aac output.mp4
+    pub fn transcode_video_to_spec_params(file: String, target: String, a_b: i32, v_b: i32, fps: i32, width: i32, height: i32) -> Result<bool, Error> {
+        let mut binding = Command::new("ffmpeg");
+        let res = binding
+            .arg("-i")
+            .arg(file)
+            .arg("-vf")
+            .arg(format!("scale={}:{}", width, height))
+            .arg("-b:v")
+            .arg(v_b.to_string())
+            .arg("-b:a")
+            .arg(a_b.to_string())
+            .arg("-r")
+            .arg(fps.to_string())
+            .arg("-c:v")
+            .arg("libx264".to_string())
+            .arg("-c:a")
+            .arg("aac".to_string())
             .arg(target)
             .output()
             .unwrap()

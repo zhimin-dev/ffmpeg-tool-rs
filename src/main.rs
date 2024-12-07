@@ -71,7 +71,7 @@ pub struct CombineArgs {
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
     target_file_name: String,
 
-    /// 相同视频参数，如果指定，则根据指定视频的视频码率、音频码率、fps进行合并, 则后面set开头的参数均被覆盖
+    /// 相同视频参数，如果指定，则根据指定视频的视频码率、音频码率、fps进行合并, 则后面set开头的参数均被覆盖, 从0开始
     #[arg(long = "same_param_index", default_value_t = - 1)]
     same_param_index: i32,
 
@@ -79,13 +79,21 @@ pub struct CombineArgs {
     #[arg(long = "set_fps", default_value_t = 0)]
     set_fps: i32,
 
-    /// 指定音频码率, audio bitrate
+    /// 指定音频码率, audio bitrate,单位：k
     #[arg(long = "set_a_b", default_value_t = 0)]
     set_a_b: i32,
 
-    /// 指定视频码率, video bitrate
+    /// 指定视频码率, video bitrate，单位：k
     #[arg(long = "set_v_b", default_value_t = 0)]
     set_v_b: i32,
+
+    /// 指定视频高度，单位：k
+    #[arg(long = "set_height", default_value_t = 0)]
+    set_height: i32,
+
+    /// 指定视频宽度，单位：k
+    #[arg(long = "set_width", default_value_t = 0)]
+    set_width: i32,
 }
 
 #[derive(clapArgs)]
@@ -94,9 +102,9 @@ pub struct DownloadArgs {
     #[arg(long = "url", default_value_t = String::from(""))]
     url: String,
 
-    /// 设置为true则会优化加速下载
-    #[arg(long = "fast")]
-    fast: bool,
+    /// 使用ffmpeg下载
+    #[arg(long = "ffmpeg_download")]
+    ffmpeg_download: bool,
 
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
@@ -142,6 +150,8 @@ pub async fn main() {
                 args.set_a_b,
                 args.set_v_b,
                 args.set_fps,
+                args.set_width,
+                args.set_height,
             )
                 .expect("合并文件失败");
             if res {
@@ -182,8 +192,7 @@ pub async fn main() {
             let file_name = get_file_name(args.target_file_name.to_owned());
             println!("download file name: {}", file_name.clone());
             let res;
-            if args.fast {
-                println!("now is fast mod");
+            if !args.ffmpeg_download {
                 match create_folder(folder_name.clone()) {
                     Ok(dir_status) => {
                         if dir_status {
@@ -216,8 +225,8 @@ pub async fn main() {
                             return;
                         }
                     }
-                    _ => {
-                        println!("出错");
+                    Err(e) => {
+                        println!("出错,{}", e);
                         return;
                     }
                 }
