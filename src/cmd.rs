@@ -228,6 +228,7 @@ pub mod cmd {
     }
 
     pub fn get_video_info(file: &str) -> Option<VideoInfo> {
+        println!("pass file name： {}---",file);
         let mut ffprobe = Command::new("ffprobe");
         let prob_result = ffprobe
             .arg("-v")
@@ -239,6 +240,7 @@ pub mod cmd {
             .arg(file.to_owned())
             .output()
             .unwrap();
+        println!("ffmpeg status : {}", prob_result.status);
         if prob_result.status.success() {
             let res_data: Ffprobe =
                 serde_json::from_str(String::from_utf8(prob_result.stdout).unwrap().as_str())

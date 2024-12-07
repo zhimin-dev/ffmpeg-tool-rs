@@ -7,7 +7,16 @@ use std::ffi::OsString;
 use std::fs::Metadata;
 use std::hash::Hash;
 use std::io::Write;
+
+#[cfg(target_os = "macos")]
 use std::os::macos::fs::MetadataExt;
+
+#[cfg(target_os = "linux")]
+use std::os::android::fs::MetadataExt;
+
+#[cfg(target_os = "windows")]
+use std::os::windows::fs::MetadataExt;
+
 use std::path::Path;
 use std::path::PathBuf;
 use std::{fs, io};
@@ -60,7 +69,7 @@ struct RepeatFileInfo {
 
 #[cfg(target_os = "windows")]
 fn get_platform_file_size(data: Metadata) -> u64 {
-    data.size()
+    data.file_size()
 }
 
 #[cfg(target_os = "linux")]
