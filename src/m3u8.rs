@@ -6,8 +6,7 @@ pub struct HlsM3u8 {
     pub method: Option<HlsM3u8Method>,
     pub iv: String,
     original_url: String,
-    folder: String,
-    // 文件夹
+    folder: String, // 文件夹
     pub sequence: i32, //序号
 }
 
@@ -191,7 +190,7 @@ pub mod m3u8 {
                         url.clone(),
                         folder_name.clone(),
                     )
-                    .await
+                        .await
                 } else {
                     hls_m3u8
                 }

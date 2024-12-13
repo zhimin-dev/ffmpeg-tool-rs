@@ -66,7 +66,7 @@ pub mod download {
     use crate::download::{download_ts_file, read_base_info, BaseInfo, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
     use std::fmt::Error;
-    use std::fs;
+    use std::{fs, io};
     use std::sync::{mpsc, Arc, Mutex};
     use std::thread;
 
@@ -159,19 +159,19 @@ pub mod download {
         .await;
     }
 
-    pub fn create_folder(folder: String) -> Result<bool, Error> {
+    pub fn create_folder(folder: String) -> io::Result<()> {
         // 检查文件夹是否存在
         if !fs::metadata(folder.clone()).is_ok() {
             // 文件夹不存在，创建文件夹
             match fs::create_dir(folder.clone()) {
-                Ok(_) => Ok(true),
+                Ok(_) => Ok(()),
                 Err(e) => {
                     println!("创建文件夹时出错：{}", e);
-                    Ok(false)
+                    Err(e)
                 }
             }
         } else {
-            Ok(true)
+            Ok(())
         }
     }
 

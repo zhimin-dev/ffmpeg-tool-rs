@@ -1,8 +1,6 @@
 /target
-*.MOV
 .idea
 .vscode
 *.lock
-images/
 /images/
 /download/

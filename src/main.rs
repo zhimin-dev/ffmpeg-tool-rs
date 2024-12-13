@@ -11,8 +11,8 @@ use crate::combine::parse::{combine_video, get_reg_file_name, get_reg_files, to_
 use crate::common::now;
 use crate::download::download::{create_folder, fast_download, get_file_name};
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
-use std::env;
-use std::path::Path;
+use std::{env};
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -51,6 +51,39 @@ pub struct CutArgs {
     /// 输出的文件名
     #[arg(long = "target_file_name", default_value_t = String::from(""))]
     target_file_name: String,
+}
+
+impl CutArgs {
+    pub fn check(&mut self) -> i32 {
+        if self.duration <= 0 {
+            println!("duration 需要 > 0");
+            return 1;
+        }
+        0
+    }
+
+    fn get_target(&self) -> String {
+        let target;
+        if self.target_file_name.is_empty() {
+            target = format!("./{}.mp4", now());
+        } else {
+            target = format!("./{}", self.target_file_name);
+        }
+        target
+    }
+    pub fn cut(&mut self) {
+        let status = self.check();
+        if status == 1 {
+            return;
+        }
+        let target = self.get_target();
+        let res = cut(self.input.clone(), self.start, self.duration, target.clone()).expect("处理失败");
+        if res {
+            println!("截取视频成功")
+        } else {
+            println!("截取视频失败")
+        }
+    }
 }
 
 #[derive(clapArgs)]
@@ -96,6 +129,46 @@ pub struct CombineArgs {
     set_width: i32,
 }
 
+impl CombineArgs {
+    fn get_target_folder(&self) -> String {
+        let target;
+        if self.target_file_name.is_empty() {
+            target = format!("./{}", get_reg_file_name(self.reg_name.to_owned()));
+        } else {
+            target = format!("./{}", self.target_file_name);
+        }
+
+        target
+    }
+    pub fn combine(&self) {
+        let files = get_reg_files(
+            self.reg_name.clone(),
+            self.reg_name_start,
+            self.reg_name_end,
+        )
+            .expect("解析失败");
+        let file_name = to_files().expect("生成文件失败");
+        let target = self.get_target_folder();
+        let res = combine_video(
+            files,
+            file_name.clone(),
+            target,
+            self.same_param_index,
+            self.set_a_b,
+            self.set_v_b,
+            self.set_fps,
+            self.set_width,
+            self.set_height,
+        )
+            .expect("合并文件失败");
+        if res {
+            println!("合并文件成功")
+        } else {
+            println!("合并文件失败")
+        }
+    }
+}
+
 #[derive(clapArgs)]
 pub struct DownloadArgs {
     /// m3u8链接地址
@@ -123,128 +196,96 @@ pub struct DownloadArgs {
     download_dir: String,
 }
 
-#[actix_web::main]
-pub async fn main() {
-    let current_dir = env::current_dir().unwrap();
-    let args = Args::parse();
-    match args.command {
-        Commands::Combine(args) => {
-            let files = get_reg_files(
-                args.reg_name.clone(),
-                args.reg_name_start,
-                args.reg_name_end,
-            )
-                .expect("解析失败");
-            let file_name = to_files().expect("生成文件失败");
-            let target;
-            if args.target_file_name.is_empty() {
-                target = format!("./{}", get_reg_file_name(args.reg_name.to_owned()));
-            } else {
-                target = format!("./{}", args.target_file_name);
-            }
-            let res = combine_video(
-                files,
-                file_name.clone(),
-                target,
-                args.same_param_index,
-                args.set_a_b,
-                args.set_v_b,
-                args.set_fps,
-                args.set_width,
-                args.set_height,
-            )
-                .expect("合并文件失败");
-            if res {
-                println!("合并文件成功")
-            } else {
-                println!("合并文件失败")
-            }
+impl DownloadArgs {
+    fn get_folder(&self) -> String {
+        let mut folder_name = self.folder.clone();
+        if folder_name.is_empty() {
+            folder_name = format!("{}", now());
         }
-        Commands::Cut(args) => {
-            if args.duration <= 0 {
-                println!("duration 需要 > 0");
-                return;
-            }
-            let target;
-            if args.target_file_name.is_empty() {
-                target = format!("./{}.mp4", now());
-            } else {
-                target = format!("./{}", args.target_file_name);
-            }
-            let res = cut(args.input.clone(), args.start, args.duration, target).expect("处理失败");
-            if res {
-                println!("截取视频成功")
-            } else {
-                println!("截取视频失败")
-            }
+        format!("./{}/{}", self.download_dir, folder_name)
+    }
+    pub async fn download(&mut self, current_dir: PathBuf) {
+        let folder_name = self.get_folder();
+        // url 或者文件夹存在base_info.json 存在即可，否则报错
+        if self.url.is_empty() && !check_base_info_exists(folder_name.clone()) {
+            println!("url or folder is required!");
+            return;
         }
-        Commands::Download(args) => {
-            let mut folder_name = args.folder.clone();
-            if folder_name.is_empty() {
-                folder_name = format!("{}", now());
-            }
-            folder_name = format!("./{}/{}", args.download_dir, folder_name);
-            // url 或者文件夹存在base_info.json 存在即可，否则报错
-            if args.url.is_empty() && !check_base_info_exists(folder_name.clone()) {
-                println!("url or folder is required!");
-                return;
-            }
-            let file_name = get_file_name(args.target_file_name.to_owned());
-            println!("download file name: {}", file_name.clone());
-            let res;
-            if !args.ffmpeg_download {
-                match create_folder(folder_name.clone()) {
-                    Ok(dir_status) => {
-                        if dir_status {
-                            if !folder_name.is_empty() {
-                                if let Err(_) = env::set_current_dir(&Path::new(&folder_name)) {
-                                    println!("进入文件夹失败");
-                                    return;
-                                } else {
-                                    res = fast_download(
-                                        args.url,
-                                        file_name,
-                                        folder_name.clone(),
-                                        args.concurrent,
-                                    )
-                                        .await
-                                        .expect("下载失败");
-                                }
-                            } else {
-                                res = fast_download(
-                                    args.url,
-                                    file_name,
-                                    folder_name.clone(),
-                                    args.concurrent,
-                                )
-                                    .await
-                                    .expect("下载失败");
-                            }
-                        } else {
-                            println!("创建文件夹失败");
+        let file_name = get_file_name(self.target_file_name.to_owned());
+        println!("download file name: {}", file_name.clone());
+        let res;
+        if !self.ffmpeg_download {
+            match create_folder(folder_name.clone()) {
+                Ok(_) => {
+                    if !folder_name.is_empty() {
+                        if let Err(_) = env::set_current_dir(&Path::new(&folder_name)) {
+                            println!("进入文件夹失败");
                             return;
                         }
                     }
-                    Err(e) => {
-                        println!("出错,{}", e);
-                        return;
-                    }
+                    res = fast_download(
+                        self.url.clone(),
+                        file_name,
+                        folder_name.clone(),
+                        self.concurrent,
+                    )
+                        .await
+                        .expect("下载失败");
                 }
-            } else {
-                res = download(args.url, file_name).expect("下载失败");
-            }
-            if res {
-                env::set_current_dir(current_dir).unwrap();
-                println!("生成mp4文件成功");
-                let data = clear_temp_files(folder_name.clone());
-                if data {
-                    println!("清理临时文件成功");
-                } else {
-                    println!("清理临时文件失败");
+                Err(e) => {
+                    println!("创建{}文件夹出错,{}", folder_name.clone(), e);
+                    return;
                 }
-            } else {
-                println!("下载失败")
             }
+        } else {
+            res = download(self.url.clone(), file_name).expect("下载失败");
+        }
+        println!("生成mp4文件成功");
+        if res {
+            env::set_current_dir(current_dir).unwrap();
+            let data = clear_temp_files(folder_name.clone());
+            if data {
+                println!("清理临时文件成功");
+            } else {
+                println!("清理临时文件失败");
+            }
+        }
+    }
+}
+
+// 初始化文件夹
+fn init_folder() {
+    ensure_directory_exists("./download");
+    ensure_directory_exists("./images");
+}
+
+fn ensure_directory_exists(path: &str) {
+    let dir_path = Path::new(path);
+
+    // 判断文件夹是否存在
+    if !dir_path.exists() {
+        // 如果不存在，则创建
+        match std::fs::create_dir_all(dir_path) {
+            Ok(_) => println!("目录已创建：{}", path),
+            Err(e) => eprintln!("创建目录失败：{}，错误信息：{}", path, e),
+        }
+    }
+}
+
+#[actix_web::main]
+pub async fn main() {
+    init_folder();
+    let current_dir = env::current_dir().unwrap();
+    let args = Args::parse();
+    match args.command {
+        Commands::Combine(mut args) => {
+            args.combine()
+        }
+        Commands::Cut(mut args) => {
+            args.cut();
+        }
+        Commands::Download(mut args) => {
+            args.download(current_dir).await;
         }
     }
 }
