@@ -62,12 +62,17 @@ impl CutArgs {
         0
     }
 
+    pub fn get_folder(&self) -> &str {
+        "cut"
+    }
+
     fn get_target(&self) -> String {
         let target;
+        let folder = self.get_folder();
         if self.target_file_name.is_empty() {
-            target = format!("./{}.mp4", now());
+            target = format!("./{}/{}.mp4", folder, now());
         } else {
-            target = format!("./{}", self.target_file_name);
+            target = format!("./{}/{}", folder, self.target_file_name);
         }
         target
     }
@@ -256,7 +261,7 @@ impl DownloadArgs {
 // 初始化文件夹
 fn init_folder() {
     ensure_directory_exists("./download");
-    ensure_directory_exists("./images");
+    ensure_directory_exists("./cut");
 }
 
 fn ensure_directory_exists(path: &str) {

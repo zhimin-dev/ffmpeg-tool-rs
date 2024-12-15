@@ -86,8 +86,10 @@ pub mod cmd {
             .arg(start.to_string())
             .arg("-t")
             .arg(duration.to_string())
-            .arg("-c")
-            .arg("copy")
+            .arg("-c:v")
+            .arg("libx264")
+            .arg("-c:a")
+            .arg("aac")
             .arg(target)
             .output()
             .unwrap()
@@ -95,7 +97,7 @@ pub mod cmd {
         if res.success() {
             Ok(true)
         } else {
-            println!("{}", res.to_string());
+            println!("ffmpeg 截取失败-{}", res.to_string());
             Ok(false)
         }
     }
