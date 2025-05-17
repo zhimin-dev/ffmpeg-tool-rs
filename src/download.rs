@@ -62,8 +62,8 @@ fn read_base_info(file_name: &str) -> Result<BaseInfo, std::io::Error> {
 
 pub mod download {
     use crate::combine::parse::handle_combine_ts;
-    use crate::common::{is_url, now};
-    use crate::download::{download_ts_file, read_base_info, BaseInfo, VideoTs};
+    use crate::common::{is_url, now, replace_last_segment};
+    use crate::download::{download_ts_file, download_ts_file_async, read_base_info, BaseInfo, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
     use std::fmt::Error;
     use std::{fs, io};
@@ -97,6 +97,18 @@ pub mod download {
             hls_m3u = parse_url(url.clone(), folder.clone(), m3u8_file_name.clone()).await;
         } else {
             hls_m3u = parse_local(url.clone(), String::default(), folder.clone()).await;
+        }
+        if !hls_m3u.x_map_uri.is_empty() {
+            println!("-------x-map-uri----{}", hls_m3u.x_map_uri.clone());
+            let mut video = VideoTs::new();
+            let mut x_url = hls_m3u.x_map_uri.clone();
+            if !is_url(x_url.clone()) {
+                x_url = replace_last_segment(url.clone().as_str(), x_url.clone().as_str())
+            }
+            println!("-----x-url---{}", x_url.clone());
+            video.url = x_url;
+            video.index = -1;
+            download_ts_file_async(video).await;
         }
         let mut ts_list = vec![];
         let mut ts_index = 0;
@@ -146,15 +158,20 @@ pub mod download {
             }
         }
         println!("----download files finished");
+        let mut start = 0;
+        if !hls_m3u.x_map_uri.is_empty() {
+            start = -1;
+        }
         return handle_combine_ts(
             String::from("(.*).ts"),
-            0,
+            start,
             (total - 1) as i32,
             _file_name.clone(),
             hls_m3u.method,
             folder.clone(),
             hls_m3u.iv,
             hls_m3u.sequence,
+            hls_m3u.x_map_uri.clone(),
         )
         .await;
     }
@@ -202,6 +219,25 @@ fn download_ts_file(video_ts: VideoTs) -> bool {
                     _ => false,
                 };
             })
+        }
+    }
+}
+
+async fn download_ts_file_async(video_ts: VideoTs) ->  bool {
+    println!("---pass {}", video_ts.url.clone());
+    let download_file_name = format!("./{}.ts", video_ts.index);
+    match fs::metadata(download_file_name.clone()) {
+        Ok(_) => {
+            println!("file {} exists", video_ts.url.clone());
+            true
+        }
+        Err(_) => {
+            println!("download ts file {}", video_ts.url.clone());
+            let res = download_file(video_ts.url.clone(), download_file_name).await;
+            return match res {
+                Ok(data) => data,
+                _ => false,
+            };
         }
     }
 }

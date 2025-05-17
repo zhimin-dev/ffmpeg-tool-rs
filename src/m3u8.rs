@@ -8,6 +8,7 @@ pub struct HlsM3u8 {
     original_url: String,
     folder: String, // 文件夹
     pub sequence: i32, //序号
+    pub x_map_uri:String,
 }
 
 // SAMPLE-AES || AES-128
@@ -26,6 +27,7 @@ impl HlsM3u8 {
             original_url: "".to_string(),
             folder: "".to_string(),
             sequence: 0,
+            x_map_uri: "".to_string(),
         }
     }
 
@@ -40,6 +42,10 @@ impl HlsM3u8 {
 
     pub fn set_key(&mut self, key: String) {
         self.key = key
+    }
+
+    pub fn set_x_map_uri(&mut self, uri: String) {
+        self.x_map_uri = uri
     }
 
     pub fn set_sequence(&mut self, sequence: i32) {
@@ -133,6 +139,10 @@ pub mod m3u8 {
                             _ => {}
                         }
                         hls_m3u8.set_sequence(seq);
+                    } else if i.starts_with("#EXT-X-MAP:URI=") {
+                        let mut uri = i.replace("#EXT-X-MAP:URI=", "");
+                        uri = uri.replace("\"", "");
+                        hls_m3u8.set_x_map_uri(uri.clone());
                     }
                 }
             }
