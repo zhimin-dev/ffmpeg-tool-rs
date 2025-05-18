@@ -49,13 +49,13 @@ jobs:
 
       - name: Strip binary (linux and macos)
         if: matrix.build == 'linux' || matrix.build == 'macos'
-        run: strip "target/${{ matrix.target }}/release/ffmpeg-tool-rs"
+        run: strip "target/${{ matrix.target }}/release/media-tool-rs"
 
       - name: Build archive
         shell: bash
         run: |
           # Replace with the name of your binary
-          binary_name="ffmpeg-tool-rs"
+          binary_name="media-tool-rs"
           dirname="$binary_name-${{ env.VERSION }}-${{ matrix.target }}"
           mkdir "$dirname"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
