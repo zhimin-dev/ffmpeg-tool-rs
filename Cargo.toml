@@ -1,5 +1,5 @@
 [package]
-name = "ffmpeg-tool-rs"
+name = "media-tool-rs"
 version = "0.0.2"
 edition = "2021"
 

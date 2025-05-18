@@ -1,6 +1,6 @@
-# ffmpeg-tool-rs
+# media-tool-rs
 
-一个关于ffmpeg的常用工具
+一个处理媒体的常用工具
 
 ## usage
 
@@ -11,7 +11,7 @@
 则执行下面的命令即可,会得到一个`IMG_.MOV`的合并后的视频文件。
 
 ```
-ffmpeg-tool-rs combine -r IMG_\(\.\*\).MOV --reg-file-start=1767 --reg-file-end=1768 --same_param_index=1 --target_file_name=2222.mp4
+media-tool-rs combine -r IMG_\(\.\*\).MOV --reg-file-start=1767 --reg-file-end=1768 --same_param_index=1 --target_file_name=2222.mp4
 ```
 
 当然也可以指定生成后的文件名，需要跟上`--target_file_name=your_filename.MOV`
@@ -20,7 +20,7 @@ ffmpeg-tool-rs combine -r IMG_\(\.\*\).MOV --reg-file-start=1767 --reg-file-end=
 ### 下载视频
 
 ```
-ffmpeg-tool-rs download --url=https://zmis.me/xxx.m3u8 --folder=1222
+media-tool-rs download --url=https://zmis.me/xxx.m3u8 --folder=1222
 ```
 
 ### 截取视频
@@ -32,5 +32,5 @@ ffmpeg-tool-rs download --url=https://zmis.me/xxx.m3u8 --folder=1222
 -d 截取视频的时长
 
 ```
-ffmpeg-tool-rs cut -i=/your/local/file.mp4 -s=5 -d=10
+media-tool-rs cut -i=/your/local/file.mp4 -s=5 -d=10
 ```
