@@ -13,6 +13,8 @@ use crate::download::download::{create_folder, fast_download, get_file_name};
 use clap::{arg, Args as clapArgs, Parser, Subcommand};
 use std::{env};
 use std::path::{Path, PathBuf};
+use url::Url;
+use md5;
 
 #[derive(Parser)]
 #[command(name = "ffmpeg-tool-rs")]
@@ -193,7 +195,7 @@ pub struct DownloadArgs {
     folder: String,
 
     /// 下载并发数
-    #[arg(long = "concurrent", default_value_t = 3)]
+    #[arg(long = "concurrent", default_value_t = 10)]
     concurrent: i32,
 
     /// 下载并发数
@@ -201,11 +203,27 @@ pub struct DownloadArgs {
     download_dir: String,
 }
 
+
+fn path_to_md5(url_str: &str) -> Option<String> {
+    // 尝试解析 URL
+    let parsed_url = Url::parse(url_str).ok()?;
+    let path = parsed_url.path(); // 提取 path，比如 "/api/v1/data"
+
+    // 计算 MD5
+    let digest = md5::compute(path);
+    Some(format!("{:x}", digest)) // 转成十六进制字符串返回
+}
+
 impl DownloadArgs {
     fn get_folder(&self) -> String {
         let mut folder_name = self.folder.clone();
         if folder_name.is_empty() {
-            folder_name = format!("{}", now());
+            let md5_str = path_to_md5(self.url.clone().as_str());
+            if md5_str.is_some() {
+                folder_name = md5_str.unwrap()
+            }else{
+                folder_name = format!("{}", now());
+            }
         }
         format!("./{}/{}", self.download_dir, folder_name)
     }

@@ -75,7 +75,7 @@ pub mod cmd {
     use std::fmt::{format, Error};
     use std::fs::{self};
     use std::path::Path;
-    use std::process::Command;
+    use std::process::{Command, Stdio};
 
     pub fn cut(file: String, start: u32, duration: u32, target: String) -> Result<bool, Error> {
         let mut binding = Command::new("ffmpeg");
@@ -227,6 +227,17 @@ pub mod cmd {
             println!("{}", res.to_string());
             Ok(false)
         }
+    }
+
+    pub fn check_video_validity(file_path: &str) -> Result<bool,Error> {
+        let output = Command::new("ffprobe")
+            .args(&["-v", "error", "-show_format", "-show_streams"])
+            .arg(file_path)
+            .stderr(Stdio::piped())
+            .output().unwrap();
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Ok(stderr.trim().is_empty())
     }
 
     pub fn get_video_info(file: &str) -> Option<VideoInfo> {

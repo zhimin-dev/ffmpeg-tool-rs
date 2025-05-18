@@ -65,10 +65,11 @@ pub mod download {
     use crate::common::{is_url, now, replace_last_segment};
     use crate::download::{download_ts_file, download_ts_file_async, read_base_info, BaseInfo, VideoTs};
     use crate::m3u8::m3u8::{parse_local, parse_url};
-    use std::fmt::Error;
+    use std::fmt::{format, Error};
     use std::{fs, io};
     use std::sync::{mpsc, Arc, Mutex};
     use std::thread;
+    use crate::cmd::cmd::check_video_validity;
 
     pub async fn fast_download(
         pass_url: String,
@@ -162,7 +163,7 @@ pub mod download {
         if !hls_m3u.x_map_uri.is_empty() {
             start = -1;
         }
-        return handle_combine_ts(
+        let res = handle_combine_ts(
             String::from("(.*).ts"),
             start,
             (total - 1) as i32,
@@ -173,7 +174,14 @@ pub mod download {
             hls_m3u.sequence,
             hls_m3u.x_map_uri.clone(),
         )
-        .await;
+        .await?;
+        return if res {
+            let f_name = format!("{}", _file_name.clone());
+            println!("---f_name {}", f_name.clone());
+            check_video_validity(f_name.as_str())
+        } else {
+            Ok(false)
+        }
     }
 
     pub fn create_folder(folder: String) -> io::Result<()> {

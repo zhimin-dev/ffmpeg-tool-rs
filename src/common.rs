@@ -39,7 +39,12 @@ pub fn replace_last_segment(url: &str, replacement: &str) -> String {
 
 pub async fn download_file(url: String, file_name: String) -> Result<bool, Error> {
     let resp = reqwest::get(&url).await.expect("get url data error");
-    let bytes = resp.bytes().await.expect("get data error");
-    fs::write(file_name.clone(), &bytes).expect("write file error");
-    Ok(true)
+    if resp.status() == 200 {
+        let bytes = resp.bytes().await.expect("get data error");
+        fs::write(file_name.clone(), &bytes).expect("write file error");
+        Ok(true)
+    }else{
+        println!("download file status is not 200, now is {}", resp.status());
+        Ok(false)
+    }
 }
