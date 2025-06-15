@@ -7,6 +7,7 @@ use tokio::runtime::Runtime;
 struct VideoTs {
     index: i32,
     url: String,
+    extension:String,
 }
 
 impl VideoTs {
@@ -14,12 +15,14 @@ impl VideoTs {
         VideoTs {
             index: 0,
             url: "".to_string(),
+            extension: "".to_string(),
         }
     }
 
-    pub fn set(&mut self, index: i32, url: String) {
+    pub fn set(&mut self, index: i32, url: String, extension:String) {
         self.index = index;
         self.url = url.clone();
+        self.extension = extension.clone()
     }
 }
 
@@ -77,7 +80,7 @@ pub mod download {
         folder: String,
         concurrent: i32,
     ) -> Result<bool, Error> {
-        let hls_m3u;
+        let mut hls_m3u;
         let mut url = pass_url;
         let base_info = "base_info.json";
         let mut m3u8_file_name = format!("{}.m3u8", now());
@@ -99,7 +102,9 @@ pub mod download {
         } else {
             hls_m3u = parse_local(url.clone(), String::default(), folder.clone()).await;
         }
+        let mut extension= "ts".to_string();
         if !hls_m3u.x_map_uri.is_empty() {
+            extension = "m4s".to_string();
             println!("-------x-map-uri----{}", hls_m3u.x_map_uri.clone());
             let mut video = VideoTs::new();
             let mut x_url = hls_m3u.x_map_uri.clone();
@@ -109,13 +114,15 @@ pub mod download {
             println!("-----x-url---{}", x_url.clone());
             video.url = x_url;
             video.index = -1;
+            video.extension = extension.clone();
             download_ts_file_async(video).await;
         }
+        hls_m3u.set_extension(extension.clone());
         let mut ts_list = vec![];
         let mut ts_index = 0;
         for x in &hls_m3u.list {
             let mut ts = VideoTs::new();
-            ts.set(ts_index, x.clone());
+            ts.set(ts_index, x.clone(), extension.clone());
             ts_list.push(ts);
             ts_index += 1;
         }
@@ -164,7 +171,7 @@ pub mod download {
             start = -1;
         }
         let res = handle_combine_ts(
-            String::from("(.*).ts"),
+            String::from(format!("(.*).{}", hls_m3u.extension)),
             start,
             (total - 1) as i32,
             _file_name.clone(),
@@ -173,6 +180,7 @@ pub mod download {
             hls_m3u.iv,
             hls_m3u.sequence,
             hls_m3u.x_map_uri.clone(),
+            hls_m3u.extension.clone(),
         )
         .await?;
         return if res {
@@ -211,7 +219,7 @@ pub mod download {
 
 fn download_ts_file(video_ts: VideoTs) -> bool {
     println!("---pass {}", video_ts.url.clone());
-    let download_file_name = format!("./{}.ts", video_ts.index);
+    let download_file_name = format!("./{}.{}", video_ts.index, video_ts.extension.clone());
     match fs::metadata(download_file_name.clone()) {
         Ok(_) => {
             println!("file {} exists", video_ts.url.clone());
@@ -221,7 +229,7 @@ fn download_ts_file(video_ts: VideoTs) -> bool {
             let rt = Runtime::new().unwrap();
             rt.block_on(async {
                 println!("download ts file {}", video_ts.url.clone());
-                let res = download_file(video_ts.url.clone(), download_file_name).await;
+                let res = download_file(video_ts.url.clone(), download_file_name, ).await;
                 return match res {
                     Ok(data) => data,
                     _ => false,
@@ -233,7 +241,7 @@ fn download_ts_file(video_ts: VideoTs) -> bool {
 
 async fn download_ts_file_async(video_ts: VideoTs) ->  bool {
     println!("---pass {}", video_ts.url.clone());
-    let download_file_name = format!("./{}.ts", video_ts.index);
+    let download_file_name = format!("./{}.{}", video_ts.index, video_ts.extension.clone());
     match fs::metadata(download_file_name.clone()) {
         Ok(_) => {
             println!("file {} exists", video_ts.url.clone());
@@ -241,7 +249,7 @@ async fn download_ts_file_async(video_ts: VideoTs) ->  bool {
         }
         Err(_) => {
             println!("download ts file {}", video_ts.url.clone());
-            let res = download_file(video_ts.url.clone(), download_file_name).await;
+            let res = download_file(video_ts.url.clone(), download_file_name, ).await;
             return match res {
                 Ok(data) => data,
                 _ => false,

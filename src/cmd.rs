@@ -222,9 +222,10 @@ pub mod cmd {
             .unwrap()
             .status;
         if res.success() {
+            println!("-ffmpeg code {}", res.success());
             Ok(true)
         } else {
-            println!("{}", res.to_string());
+            println!("combine_ts error,ffmpeg code:{}", res.to_string());
             Ok(false)
         }
     }

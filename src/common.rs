@@ -1,5 +1,6 @@
-use std::fmt::Error;
+use std::fmt::{format, Error};
 use std::fs;
+use std::fs::File;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::Url;
 
@@ -41,7 +42,7 @@ pub async fn download_file(url: String, file_name: String) -> Result<bool, Error
     let resp = reqwest::get(&url).await.expect("get url data error");
     if resp.status() == 200 {
         let bytes = resp.bytes().await.expect("get data error");
-        fs::write(file_name.clone(), &bytes).expect("write file error");
+        fs::write(file_name.clone(), bytes).expect(format!("write file error {}", file_name.clone()).as_str());
         Ok(true)
     }else{
         println!("download file status is not 200, now is {}", resp.status());

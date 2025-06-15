@@ -229,6 +229,7 @@ impl DownloadArgs {
     }
     pub async fn download(&mut self, current_dir: PathBuf) {
         let folder_name = self.get_folder();
+        println!("download folder name == {}", folder_name.clone());
         // url 或者文件夹存在base_info.json 存在即可，否则报错
         if self.url.is_empty() && !check_base_info_exists(folder_name.clone()) {
             println!("url or folder is required!");
@@ -249,7 +250,7 @@ impl DownloadArgs {
                     res = fast_download(
                         self.url.clone(),
                         file_name,
-                        folder_name.clone(),
+                        self.folder.clone(),
                         self.concurrent,
                     )
                         .await
@@ -261,7 +262,9 @@ impl DownloadArgs {
                 }
             }
         } else {
-            res = download(self.url.clone(), file_name).expect("下载失败");
+            let full_file = format!("{}/{}",folder_name, file_name);
+            println!("full file name = {}", full_file.clone());
+            res = download(self.url.clone(), full_file.clone()).expect("下载失败");
         }
         println!("生成mp4文件成功");
         if res {

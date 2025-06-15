@@ -9,6 +9,7 @@ pub struct HlsM3u8 {
     folder: String, // 文件夹
     pub sequence: i32, //序号
     pub x_map_uri:String,
+    pub extension:String,//视频扩展字段
 }
 
 // SAMPLE-AES || AES-128
@@ -28,6 +29,7 @@ impl HlsM3u8 {
             folder: "".to_string(),
             sequence: 0,
             x_map_uri: "".to_string(),
+            extension: "ts".to_string(),
         }
     }
 
@@ -46,6 +48,10 @@ impl HlsM3u8 {
 
     pub fn set_x_map_uri(&mut self, uri: String) {
         self.x_map_uri = uri
+    }
+
+    pub fn set_extension(&mut self, extension: String) {
+        self.extension = extension
     }
 
     pub fn set_sequence(&mut self, sequence: i32) {
@@ -78,17 +84,17 @@ impl HlsM3u8 {
     }
 
     async fn convert_local_key(&mut self) {
-        let res = download_file(self.key.clone(), format!("./{}.key", self.folder.clone())).await;
+        let res = download_file(self.key.clone(), format!("./{}.bin", self.folder.clone())).await;
         return match res {
             Ok(data) => {
                 if data {
-                    println!("下载成功")
-                } else {
-                    println!("下载失败")
-                }
+                    println!("key 下载成功")
+                } else{
+                   println!("key 下载出错")
+               }
             }
             _ => {
-                println!("下载出错")
+                println!("key 下载出错")
             }
         };
     }
@@ -192,7 +198,7 @@ pub mod m3u8 {
     pub async fn parse_url(url: String, folder_name: String, m3u8_file_name: String) -> HlsM3u8 {
         let hls_m3u8 = HlsM3u8::new();
         let local_file = format!("./{}", m3u8_file_name);
-        match download_file(url.clone(), local_file.clone()).await {
+        match download_file(url.clone(), local_file.clone(), ).await {
             Ok(data) => {
                 if data {
                     parse_local(
